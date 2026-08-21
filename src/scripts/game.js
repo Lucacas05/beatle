@@ -363,16 +363,18 @@ function highlight(text, rawQuery) {
 
 function openAC(list, q) {
   acItems = list;
-  acIndex = -1;
+  acIndex = list.length ? 0 : -1;
   els.ac.innerHTML = list.length
     ? list.map((s, i) =>
-        `<button type="button" class="ac-item" role="option" id="ac-opt-${i}" aria-selected="false" data-i="${i}">
+        `<button type="button" class="ac-item" role="option" id="ac-opt-${i}" aria-selected="${i === 0 ? "true" : "false"}" data-i="${i}">
            <span class="t">${highlight(s.track, q)}</span>
            <span class="a">${highlight(s.artist, q)}</span>
          </button>`).join("")
     : `<p class="ac-empty">No matches</p>`;
   els.ac.classList.add("show");
   els.input.setAttribute("aria-expanded", "true");
+  if (acIndex >= 0) els.input.setAttribute("aria-activedescendant", "ac-opt-" + acIndex);
+  else els.input.removeAttribute("aria-activedescendant");
 }
 
 function closeAC() {
@@ -422,7 +424,12 @@ els.input.addEventListener("keydown", (e) => {
   const open = els.ac.classList.contains("show");
   if (e.key === "ArrowDown") { e.preventDefault(); open ? moveAC(1) : onInput(); }
   else if (e.key === "ArrowUp") { if (open) { e.preventDefault(); moveAC(-1); } }
-  else if (e.key === "Enter") { if (open && acIndex >= 0) { e.preventDefault(); chooseAC(acIndex); } }
+  else if (e.key === "Enter") {
+    if (open && acItems.length) {
+      e.preventDefault();
+      chooseAC(acIndex >= 0 ? acIndex : 0);
+    }
+  }
   else if (e.key === "Escape") { if (open) { e.preventDefault(); closeAC(); } }
 });
 els.ac.addEventListener("mousedown", (e) => {
