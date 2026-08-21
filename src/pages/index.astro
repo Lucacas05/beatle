@@ -1,0 +1,98 @@
+---
+import "../styles/global.css";
+import { GENRES, SNIPPETS } from "../data/catalog.js";
+const total = SNIPPETS.reduce((a, b) => a + b, 0);
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Songless — Guess the song</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <header class="top">
+    <button class="icon" id="newSongTop" aria-label="New song" title="New song">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/></svg>
+    </button>
+    <h1 class="logo">Songless</h1>
+    <span class="streak-pill">Streak <b id="streakTop">0</b></span>
+  </header>
+
+  <div class="page">
+    <div class="genres" id="genreBar" role="group" aria-label="Choose a music genre">
+      {Object.entries(GENRES).map(([id, g], i) => (
+        <button type="button" class={"chip" + (i === 0 ? " active" : "")} data-genre={id} aria-pressed={i === 0 ? "true" : "false"}>{g.label}</button>
+      ))}
+    </div>
+
+    <main>
+      <div class="rows" id="rows" aria-label="Guesses" aria-live="polite">
+        {SNIPPETS.map(() => <div class="row"></div>)}
+      </div>
+
+      <div class="player">
+        <button class="play-btn" id="playBtn" aria-label="Play snippet" disabled>
+          <svg id="playIcon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <div class="segments" id="segments" aria-hidden="true">
+          {SNIPPETS.map((s) => <div class="seg" style={`flex:${s}`}><i></i></div>)}
+        </div>
+        <p class="hint" id="hint">Loading song…</p>
+      </div>
+
+      <section class="result" id="result" aria-live="polite">
+        <h2 class="result-head" id="resultHead"></h2>
+        <p class="result-sub" id="resultSub"></p>
+        <div class="song-card">
+          <img class="song-art" id="songArt" alt="Album artwork" referrerpolicy="no-referrer" />
+          <div class="song-meta">
+            <p class="song-title" id="songTitle"></p>
+            <p class="song-artist" id="songArtist"></p>
+            <a class="song-link" id="songLink" href="#" target="_blank" rel="noopener">Listen on Apple Music</a>
+          </div>
+        </div>
+        <div class="stats">
+          <div class="stat"><b id="statPlayed">0</b><span>Played</span></div>
+          <div class="stat"><b id="statWinPct">0</b><span>Win %</span></div>
+          <div class="stat"><b id="statStreak">0</b><span>Streak</span></div>
+        </div>
+      </section>
+
+      <form class="guess" id="guessForm" autocomplete="off">
+        <div class="combo">
+          <input type="text" id="guessInput" placeholder="Type the song title" disabled
+                 role="combobox" aria-expanded="false" aria-autocomplete="list"
+                 aria-controls="acList" autocomplete="off" autocorrect="off" spellcheck="false" />
+          <div class="ac" id="acList" role="listbox" aria-label="Song suggestions"></div>
+        </div>
+        <div class="actions" id="playActions">
+          <button type="button" class="btn btn-ghost" id="skipBtn" disabled>Skip</button>
+          <button type="submit" class="btn btn-primary" id="submitBtn" disabled>Guess</button>
+        </div>
+        <div class="actions" id="doneActions" hidden>
+          <button type="button" class="btn btn-ghost" id="shareBtn">Share</button>
+          <button type="button" class="btn btn-primary" id="newSongBtn">Next song</button>
+        </div>
+        <div class="actions" id="retryActions" hidden>
+          <button type="button" class="btn btn-primary" id="retryBtn">Try again</button>
+        </div>
+      </form>
+
+      <div class="legend">
+        <span><i style="background:var(--green)"></i>Correct</span>
+        <span><i style="background:var(--yellow)"></i>Right artist</span>
+        <span><i style="background:var(--gray)"></i>Wrong</span>
+      </div>
+    </main>
+  </div>
+
+  <footer>Audio snippets via iTunes Preview · {total} seconds max</footer>
+  <div class="toast" id="toast" role="status"></div>
+
+  <script src="../scripts/game.js"></script>
+</body>
+</html>
