@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Songless — Adivina la canción</title>
+<title>Songless — Guess the song</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500..900;1,9..144,500..900&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -265,9 +265,13 @@ header{
   display:flex;
   gap:8px;
 }
-.guess-row input{
+.combo{
+  position:relative;
   flex:1;
   min-width:0;
+}
+.guess-row input{
+  width:100%;
   padding:14px 18px;
   border-radius:var(--radius);
   border:2px solid var(--ink);
@@ -305,6 +309,63 @@ header{
 }
 .btn-ghost:hover:not(:disabled){border-color:var(--ink);color:var(--ink)}
 .btn-ghost:disabled{opacity:.4;cursor:not-allowed}
+
+.ac{
+  position:absolute;
+  z-index:30;
+  top:calc(100% + 8px);
+  left:0;
+  right:0;
+  background:var(--surface);
+  border:2px solid var(--ink);
+  border-radius:var(--radius);
+  box-shadow:5px 5px 0 var(--accent-wash);
+  overflow:hidden auto;
+  max-height:min(300px, 46vh);
+  display:none;
+  overscroll-behavior:contain;
+  animation:drop .18s cubic-bezier(.22,1,.36,1) both;
+}
+.ac.show{display:block}
+.ac::-webkit-scrollbar{width:10px}
+.ac::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px;border:3px solid var(--surface)}
+.ac-item{
+  display:flex;
+  flex-direction:column;
+  gap:1px;
+  width:100%;
+  text-align:left;
+  padding:10px 16px;
+  border-bottom:1px solid var(--line);
+  transition:background .12s;
+}
+.ac-item:last-child{border-bottom:none}
+.ac-item .t{
+  font-weight:700;
+  font-size:15px;
+  line-height:1.25;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.ac-item .a{
+  font-size:12.5px;
+  font-weight:600;
+  color:var(--ink-soft);
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.ac-item mark{background:var(--accent-wash);color:inherit;border-radius:3px;padding:0 1px}
+.ac-item[aria-selected="true"]{background:var(--accent-wash)}
+.ac-item[aria-selected="true"] .a{color:var(--accent-deep)}
+.ac-empty{
+  padding:12px 16px;
+  font-size:14px;
+  font-weight:600;
+  color:var(--ink-soft);
+  font-style:italic;
+}
 
 .history{
   list-style:none;
@@ -487,16 +548,16 @@ footer a{color:inherit}
 <div class="page">
   <header>
     <h1 class="logo"><span class="disc" aria-hidden="true"></span>SONG<em>LESS</em></h1>
-    <p class="tagline">Adivina la<br>canción</p>
+    <p class="tagline">Guess the<br>song</p>
   </header>
 
-  <div class="genres" id="genreBar" role="group" aria-label="Elegir género musical">
-    <span class="genres-label">Género</span>
+  <div class="genres" id="genreBar" role="group" aria-label="Choose a music genre">
+    <span class="genres-label">Genre</span>
   </div>
 
   <div class="status">
-    <p id="statusText">Cargando canción…</p>
-    <div class="attempts" id="attemptDots" aria-label="Intentos"></div>
+    <p id="statusText">Loading song…</p>
+    <div class="attempts" id="attemptDots" aria-label="Attempts"></div>
   </div>
 
   <main class="stage">
@@ -504,21 +565,26 @@ footer a{color:inherit}
       <div class="vinyl" id="vinyl">
         <div class="vinyl-label"><span></span></div>
       </div>
-      <button class="play-btn" id="playBtn" aria-label="Escuchar fragmento" disabled>
+      <button class="play-btn" id="playBtn" aria-label="Play snippet" disabled>
         <span class="play-icon">
           <svg id="playIcon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
         </span>
       </button>
     </div>
     <div class="snippet-bar" aria-hidden="true"><i id="snippetFill"></i></div>
-    <p class="snippet-hint" id="snippetHint">Presiona el disco para escuchar</p>
+    <p class="snippet-hint" id="snippetHint">Press the record to listen</p>
+    <button type="button" class="btn btn-ghost" id="retryBtn" hidden>Try again</button>
 
     <div class="guess-zone">
       <form class="guess-row" id="guessForm" autocomplete="off">
-        <input type="text" id="guessInput" list="songList" placeholder="Escribe tu respuesta…" disabled>
-        <datalist id="songList"></datalist>
-        <button type="submit" class="btn btn-primary" id="submitBtn" disabled>Enviar</button>
-        <button type="button" class="btn btn-ghost" id="skipBtn" disabled>Saltar</button>
+        <div class="combo">
+          <input type="text" id="guessInput" placeholder="Type your guess…" disabled
+                 role="combobox" aria-expanded="false" aria-autocomplete="list"
+                 aria-controls="acList" autocomplete="off" autocorrect="off" spellcheck="false">
+          <div class="ac" id="acList" role="listbox" aria-label="Song suggestions"></div>
+        </div>
+        <button type="submit" class="btn btn-primary" id="submitBtn" disabled>Submit</button>
+        <button type="button" class="btn btn-ghost" id="skipBtn" disabled>Skip</button>
       </form>
       <ul class="history" id="history"></ul>
     </div>
@@ -527,50 +593,125 @@ footer a{color:inherit}
       <h2 class="result-head" id="resultHead"></h2>
       <p class="result-sub" id="resultSub"></p>
       <div class="song-card">
-        <img class="song-art" id="songArt" alt="Portada del álbum" referrerpolicy="no-referrer">
+        <img class="song-art" id="songArt" alt="Album artwork" referrerpolicy="no-referrer">
         <div class="song-meta">
           <p class="song-title" id="songTitle"></p>
           <p class="song-artist" id="songArtist"></p>
-          <a class="song-link" id="songLink" href="#" target="_blank" rel="noopener">Escuchar en Apple Music ↗</a>
+          <a class="song-link" id="songLink" href="#" target="_blank" rel="noopener">Listen on Apple Music ↗</a>
         </div>
       </div>
       <div class="stats-strip">
-        <div class="stat"><b id="statStreak">0</b><span>Racha</span></div>
-        <div class="stat"><b id="statWins">0</b><span>Victorias</span></div>
-        <div class="stat"><b id="statPlayed">0</b><span>Jugadas</span></div>
+        <div class="stat"><b id="statStreak">0</b><span>Streak</span></div>
+        <div class="stat"><b id="statWins">0</b><span>Wins</span></div>
+        <div class="stat"><b id="statPlayed">0</b><span>Played</span></div>
       </div>
       <div class="result-actions">
-        <button class="btn btn-primary" id="newSongBtn">Nueva canción</button>
+        <button class="btn btn-primary" id="newSongBtn">New song</button>
       </div>
     </section>
   </main>
 
-  <footer>Fragments de audio vía iTunes Preview · Sin registro, solo oído</footer>
+  <footer>Audio snippets via iTunes Preview · No sign-up, just your ears</footer>
 </div>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
 const SNIPPETS = [1, 2, 4, 8, 15];
-const GENRES = {
-  mixto: { label:"Mixto", terms:["bad bunny","karol g","taylor swift","the weeknd","dua lipa","billie eilish","quevedo","bizarrap","bruno mars","sabrina carpenter","olivia rodrigo","harry styles","feid","shakira","coldplay","rihanna","post malone","miley cyrus","lady gaga","rosalia","peso pluma","ariana grande","justin bieber","ed sheeran","sia","imagine dragons","manuel turizo","ryan castro","blessd","lana del rey"] },
-  reggaeton: { label:"Reggaetón", terms:["bad bunny","rauw alejandro","karol g","feid","j balvin","ozuna","daddy yankee","myke towers","arcangel","wisin y yandel","quevedo","peso pluma","blessd","ryan castro"] },
-  pop: { label:"Pop", terms:["taylor swift","dua lipa","sabrina carpenter","olivia rodrigo","harry styles","ariana grande","bruno mars","ed sheeran","billie eilish","miley cyrus","justin bieber","lady gaga","lana del rey"] },
-  rock: { label:"Rock", terms:["queen","the beatles","coldplay","imagine dragons","nirvana","red hot chili peppers","linkin park","guns n roses","foo fighters","the rolling stones","oasis","bon jovi"] },
-  hiphop: { label:"Hip-Hop", terms:["drake","kendrick lamar","travis scott","eminem","kanye west","nicki minaj","post malone","future","j cole","tyler the creator","snoop dogg","50 cent"] },
-  latina: { label:"Latina", terms:["shakira","carlos vives","marc anthony","hector lavoe","willie colon","celia cruz","juan luis guerra","grupo 5","agua marina","armonia 10","gente de zona","ruben blades"] }
+
+/* Curated catalog: widely known songs only.
+   Format "Title|Artist" (the artist is what we search for on iTunes). */
+const CATALOG = {
+  reggaeton: [
+    "Tití Me Preguntó|Bad Bunny","NUEVAYoL|Bad Bunny","Dákiti|Bad Bunny","Ojitos Lindos|Bad Bunny",
+    "Neverita|Bad Bunny","Sal y Perrea|Sech","Relación|Sech","GATÚBELA|KAROL G",
+    "Gasolina|Daddy Yankee","Con Calma|Daddy Yankee","Dura|Daddy Yankee","Limbo|Daddy Yankee",
+    "Despacito|Luis Fonsi","Mi Gente|J Balvin","Ginza|J Balvin","Ay Vamos|J Balvin","Safari|J Balvin",
+    "Tusa|KAROL G","Provenza|KAROL G","MI EX TENÍA RAZÓN|KAROL G","EL MAKINÓN|KAROL G","Mamiii|KAROL G",
+    "Si Antes Te Hubiera Conocido|KAROL G","Que Le Dé|Rauw Alejandro","Culpables|KAROL G",
+    "Se Preparó|Ozuna","Baila Baila Baila|Ozuna","Caramelo|Ozuna","Taki Taki|DJ Snake",
+    "LUNA|Feid","Classy 101|Feid","Ferxxo 100|Feid","La Curiosidad|Myke Towers","TKN|ROSALÍA",
+    "Quevedo: Bzrp Music Sessions, Vol. 52|Bizarrap","Shakira: Bzrp Music Sessions, Vol. 53|Bizarrap",
+    "Columbia|Quevedo","Danza Kuduro|Don Omar","Dile|Don Omar","El Perdón|Nicky Jam","Travesuras|Nicky Jam",
+    "Felices los 4|Maluma","Hawái|Maluma","Chantaje|Shakira","China|Anuel AA","Secreto|Anuel AA",
+    "MALAMENTE|ROSALÍA","La Bachata|Manuel Turizo","Una Lady Como Tú|Manuel Turizo",
+    "Rakata|Wisin & Yandel","Ella Baila Sola|Peso Pluma","La Bebe|Yng Lvcas","Con Altura|ROSALÍA"
+  ],
+  pop: [
+    "Blank Space|Taylor Swift","Shake It Off|Taylor Swift","Love Story|Taylor Swift","Anti-Hero|Taylor Swift",
+    "Cruel Summer|Taylor Swift","Style|Taylor Swift","Levitating|Dua Lipa","Don't Start Now|Dua Lipa",
+    "New Rules|Dua Lipa","Houdini|Dua Lipa","Blinding Lights|The Weeknd","Starboy|The Weeknd",
+    "Save Your Tears|The Weeknd","Die For You|The Weeknd","Can't Feel My Face|The Weeknd",
+    "bad guy|Billie Eilish","lovely|Billie Eilish","BIRDS OF A FEATHER|Billie Eilish","What Was I Made For?|Billie Eilish",
+    "drivers license|Olivia Rodrigo","good 4 u|Olivia Rodrigo","vampire|Olivia Rodrigo",
+    "As It Was|Harry Styles","Watermelon Sugar|Harry Styles","Sign of the Times|Harry Styles",
+    "Shape of You|Ed Sheeran","Perfect|Ed Sheeran","Photograph|Ed Sheeran","Thinking Out Loud|Ed Sheeran",
+    "Uptown Funk|Mark Ronson","Just the Way You Are|Bruno Mars","Grenade|Bruno Mars",
+    "Locked Out of Heaven|Bruno Mars","Die With A Smile|Lady Gaga","APT.|ROSÉ",
+    "thank u, next|Ariana Grande","7 rings|Ariana Grande","Into You|Ariana Grande","Problem|Ariana Grande",
+    "Sorry|Justin Bieber","Love Yourself|Justin Bieber","Baby|Justin Bieber","Peaches|Justin Bieber",
+    "Bad Romance|Lady Gaga","Poker Face|Lady Gaga","Shallow|Lady Gaga","Flowers|Miley Cyrus",
+    "Wrecking Ball|Miley Cyrus","Party in the U.S.A.|Miley Cyrus","Hello|Adele","Rolling in the Deep|Adele",
+    "Someone Like You|Adele","Easy On Me|Adele","Espresso|Sabrina Carpenter","Please Please Please|Sabrina Carpenter",
+    "Roar|Katy Perry","Firework|Katy Perry","Dark Horse|Katy Perry","Umbrella|Rihanna","Diamonds|Rihanna",
+    "We Found Love|Rihanna","Sugar|Maroon 5","Girls Like You|Maroon 5","Memories|Maroon 5",
+    "Chandelier|Sia","Cheap Thrills|Sia","Summertime Sadness|Lana Del Rey","Young and Beautiful|Lana Del Rey"
+  ],
+  rock: [
+    "Bohemian Rhapsody|Queen","Don't Stop Me Now|Queen","We Will Rock You|Queen","Another One Bites the Dust|Queen",
+    "Somebody to Love|Queen","Hey Jude|The Beatles","Let It Be|The Beatles","Come Together|The Beatles",
+    "Yesterday|The Beatles","Here Comes the Sun|The Beatles","Smells Like Teen Spirit|Nirvana",
+    "Come as You Are|Nirvana","Lithium|Nirvana","Sweet Child O' Mine|Guns N' Roses","Welcome to the Jungle|Guns N' Roses",
+    "November Rain|Guns N' Roses","Back in Black|AC/DC","Highway to Hell|AC/DC","Thunderstruck|AC/DC",
+    "Stairway to Heaven|Led Zeppelin","Whole Lotta Love|Led Zeppelin","Immigrant Song|Led Zeppelin",
+    "Viva La Vida|Coldplay","Yellow|Coldplay","The Scientist|Coldplay","Fix You|Coldplay","Paradise|Coldplay",
+    "Californication|Red Hot Chili Peppers","Under the Bridge|Red Hot Chili Peppers","Can't Stop|Red Hot Chili Peppers",
+    "Otherside|Red Hot Chili Peppers","In the End|Linkin Park","Numb|Linkin Park","Faint|Linkin Park",
+    "What I've Done|Linkin Park","Believer|Imagine Dragons","Radioactive|Imagine Dragons","Thunder|Imagine Dragons",
+    "Demons|Imagine Dragons","When I Come Around|Green Day","21 Guns|Green Day","Basket Case|Green Day",
+    "Paint It Black|The Rolling Stones","(I Can't Get No) Satisfaction|The Rolling Stones","Start Me Up|The Rolling Stones",
+    "Wonderwall|Oasis","Don't Look Back in Anger|Oasis","Livin' on a Prayer|Bon Jovi","It's My Life|Bon Jovi",
+    "Don't Stop Believin'|Journey","Enter Sandman|Metallica","Nothing Else Matters|Metallica",
+    "Mr. Brightside|The Killers","Everlong|Foo Fighters","The Pretender|Foo Fighters","Karma Police|Radiohead","No Surprises|Radiohead",
+    "Eye of the Tiger|Survivor","Africa|TOTO","Hotel California|Eagles","Wish You Were Here|Pink Floyd",
+    "De Música Ligera|Soda Stereo","Rayando el Sol|Maná","Zombie|The Cranberries","Seven Nation Army|The White Stripes"
+  ],
+  hiphop: [
+    "Lose Yourself|Eminem","Without Me|Eminem","The Real Slim Shady|Eminem","Rap God|Eminem","Stan|Eminem",
+    "Love The Way You Lie|Eminem","God's Plan|Drake","Hotline Bling|Drake","One Dance|Drake",
+    "In My Feelings|Drake","Started From the Bottom|Drake","HUMBLE.|Kendrick Lamar","Not Like Us|Kendrick Lamar",
+    "DNA.|Kendrick Lamar","Alright|Kendrick Lamar","Money Trees|Kendrick Lamar","SICKO MODE|Travis Scott",
+    "goosebumps|Travis Scott","FE!N|Travis Scott","Antidote|Travis Scott","Stronger|Kanye West",
+    "Gold Digger|Kanye West","Heartless|Kanye West","POWER|Kanye West","In Da Club|50 Cent","Candy Shop|50 Cent",
+    "Drop It Like It's Hot|Snoop Dogg","Gin and Juice|Snoop Dogg","Still D.R.E.|Dr. Dre","The Next Episode|Dr. Dre",
+    "California Love|2Pac","Changes|2Pac","Juicy|The Notorious B.I.G.","Hypnotize|The Notorious B.I.G.",
+    "Empire State of Mind|JAY-Z","99 Problems|JAY-Z","Super Bass|Nicki Minaj","Anaconda|Nicki Minaj",
+    "Starships|Nicki Minaj","Bodak Yellow|Cardi B","I Like It|Cardi B","WAP|Cardi B",
+    "rockstar|Post Malone","Circles|Post Malone","Congratulations|Post Malone","Sunflower|Post Malone",
+    "This Is America|Childish Gambino","Redbone|Childish Gambino","No Role Modelz|J. Cole","Middle Child|J. Cole",
+    "Mask Off|Future","Life Is Good|Future","Old Town Road|Lil Nas X","MONTERO (Call Me By Your Name)|Lil Nas X",
+    "Thrift Shop|Macklemore & Ryan Lewis","EARFQUAKE|Tyler, The Creator","Lucid Dreams|Juice WRLD","Panda|Desiigner"
+  ]
 };
 
-const FALLBACK_SONGS = [
-  {track:"Blinding Lights",artist:"The Weeknd",art:"https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/a6/6e/bf/a66ebf79-5008-8948-b352-a790fc87446b/19UM1IM04638.rgb.jpg/300x300bb.jpg",url:"https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/17/b4/8f/17b48f9a-0b93-6bb8-fe1d-3a16623c2cfb/mzaf_9560252727299052414.plus.aac.p.m4a",link:"https://music.apple.com/us/album/blinding-lights/1488408555?i=1488408568&uo=4"},
-  {track:"Shape of You",artist:"Ed Sheeran",art:"https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/15/e6/e8/15e6e8a4-4190-6a8b-86c3-ab4a51b88288/190295851286.jpg/300x300bb.jpg",url:"https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/44/c7/4f/44c74f0d-72dc-6143-d4d0-ba14d661ca0d/mzaf_9566898362556366703.plus.aac.p.m4a",link:"https://music.apple.com/us/album/shape-of-you/1193701079?i=1193701392&uo=4"},
-  {track:"NUEVAYoL",artist:"Bad Bunny",art:"https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/90/5e/7e/905e7ed5-a8fa-a8f3-cd06-0028fdf3afaa/199066342442.jpg/300x300bb.jpg",url:"https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/2e/97/55/2e97555a-1ed3-9e07-de57-07e1213186c9/mzaf_7594924455925081680.plus.aac.p.m4a",link:"https://music.apple.com/us/album/nuevayol/1787022393?i=1787022572&uo=4"},
-  {track:"Call Out My Name",artist:"The Weeknd",art:"https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/2a/aa/b4/2aaab42a-a4cb-a600-4a25-d78961495960/18UMGIM17204.rgb.jpg/300x300bb.jpg",url:"https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/d1/2f/3d/d12f3d43-a2e2-eba4-8db5-91f3f3c13f5a/mzaf_8470584399239689698.plus.aac.p.m4a",link:"https://music.apple.com/us/album/call-out-my-name/1363309866?i=1363310482&uo=4"},
-  {track:"WILDFLOWER",artist:"Billie Eilish",art:"https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/92/9f/69/929f69f1-9977-3a44-d674-11f70c852d1b/24UMGIM36186.rgb.jpg/300x300bb.jpg",url:"https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/de/c3/e8/dec3e884-7237-9622-718a-12c5f48c5ca2/mzaf_3134455671785145822.plus.aac.p.m4a",link:"https://music.apple.com/us/album/wildflower/1739659134?i=1739659144&uo=4"},
-  {track:"Si Antes Te Hubiera Conocido",artist:"KAROL G",art:"https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/a0/60/94/a060947c-54d8-0fad-c558-eed12600224c/24UMGIM62705.rgb.jpg/300x300bb.jpg",url:"https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/0f/07/33/0f0733c9-76b3-39f9-9115-9031acd75839/mzaf_249954100848422596.plus.aac.p.m4a",link:"https://music.apple.com/us/album/si-antes-te-hubiera-conocido/1752031533?i=1752031539&uo=4"},
-  {track:"Quevedo: Bzrp Music Sessions, Vol. 52/66",artist:"Bizarrap & Quevedo",art:"https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/a0/b5/76/a0b576ad-667d-1140-4694-23e5d598e89e/196925240499.jpg/300x300bb.jpg",url:"https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/f0/0e/3c/f00e3c3a-2d1c-3af5-69f7-20acb1b07a15/mzaf_2006049997653917583.plus.aac.p.m4a",link:"https://music.apple.com/us/album/quevedo-bzrp-music-sessions-vol-52-66/1632746799?i=1632746802&uo=4"}
-];
+const GENRES = {
+  reggaeton: { label:"Reggaeton" },
+  pop:       { label:"Pop" },
+  rock:      { label:"Rock" },
+  hiphop:    { label:"Rap" }
+};
+
+/* Built once: each genre -> array of {track, artist, genre} */
+const LIBRARY = {};
+for(const [id, list] of Object.entries(CATALOG)){
+  LIBRARY[id] = list.map(s => {
+    const [track, artist] = s.split("|");
+    return { track, artist, genre:id };
+  });
+}
+const ALL_SONGS = Object.keys(CATALOG).flatMap(id => LIBRARY[id]);
 
 const $ = id => document.getElementById(id);
+
 const els = {
   status:$("statusText"), dots:$("attemptDots"), vinyl:$("vinyl"),
   playBtn:$("playBtn"), playIcon:$("playIcon"), fill:$("snippetFill"),
@@ -578,34 +719,70 @@ const els = {
   submit:$("submitBtn"), skip:$("skipBtn"), history:$("history"),
   result:$("result"), head:$("resultHead"), sub:$("resultSub"),
   art:$("songArt"), title:$("songTitle"), artist:$("songArtist"),
-  link:$("songLink"), toast:$("toast"), newSong:$("newSongBtn"),
-  streak:$("statStreak"), wins:$("statWins"), played:$("statPlayed")
+  link:$("songLink"), toast:$("toast"), newSong:$("newSongBtn"), retry:$("retryBtn"),
+  streak:$("statStreak"), wins:$("statWins"), played:$("statPlayed"),
+  ac:$("acList")
 };
 
-let pool = [];
+/* Every normalized title: prevents accepting as a typo a guess that
+   is actually a different song. */
+const ALL_TITLES = new Set();
+
 let song = null;
 let attempt = 0;
 let playing = false;
 let stopTimer = null;
 let rafId = null;
-let playStart = 0;
-let snippetLen = 0;
-let currentGenre = "mixto";
-const poolCache = {};
-const recentTracks = [];
+let currentGenre = "reggaeton";
 let loading = false;
+let roundToken = 0;
+let audio = null;
+const recentTracks = [];
+
+/* Cache of resolved previews, persisted across sessions so we don't
+   hammer the iTunes API or wait again on songs we've already seen. */
+const CACHE_KEY = "songless-previews-v1";
+const previewCache = new Map(Object.entries((()=>{
+  try{ return JSON.parse(localStorage.getItem(CACHE_KEY)) || {}; }catch{ return {}; }
+})()));
+let cacheSaveTimer = null;
+function persistCache(){
+  clearTimeout(cacheSaveTimer);
+  cacheSaveTimer = setTimeout(()=>{
+    try{ localStorage.setItem(CACHE_KEY, JSON.stringify(Object.fromEntries(previewCache))); }catch{}
+  }, 400);
+}
 
 const norm = s => (s||"").toLowerCase()
   .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
   .replace(/\(.*?\)|\[.*?\]/g," ")
+  .replace(/&/g," and ")
   .replace(/[^a-z0-9 ]/g," ")
+  .replace(/\b(feat|ft|with|remastered|remaster|version|radio edit|single|deluxe)\b/g," ")
   .replace(/\s+/g," ").trim();
+
+ALL_SONGS.forEach(s => ALL_TITLES.add(norm(s.track)));
 
 function shuffle(a){
   for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
   return a;
 }
 
+function levenshtein(a, b){
+  if(a === b) return 0;
+  if(!a.length || !b.length) return Math.max(a.length, b.length);
+  let prev = Array.from({length:b.length+1}, (_,i)=>i);
+  for(let i=1;i<=a.length;i++){
+    const cur = [i];
+    for(let j=1;j<=b.length;j++){
+      cur[j] = Math.min(prev[j]+1, cur[j-1]+1, prev[j-1] + (a[i-1]===b[j-1]?0:1));
+    }
+    prev = cur;
+  }
+  return prev[b.length];
+}
+
+/* ---------- iTunes ---------- */
 function jsonp(url){
   return new Promise((resolve, reject) => {
     const cb = "itcb_" + Math.random().toString(36).slice(2);
@@ -619,31 +796,58 @@ function jsonp(url){
   });
 }
 
-async function loadPool(genreId){
-  const terms = shuffle([...GENRES[genreId].terms]).slice(0,5);
-  const res = await Promise.allSettled(
-    terms.map(t => jsonp(`https://itunes.apple.com/search?term=${encodeURIComponent(t)}&entity=song&limit=10&country=US`))
+/* Finds the real preview for one specific catalog song. Only accepts
+   results whose title and artist both match, so a random track from
+   another genre can never slip in. */
+async function resolvePreview(entry){
+  const key = entry.artist + "|" + entry.track;
+  if(previewCache.has(key)) return previewCache.get(key);
+
+  const q = `${entry.artist} ${entry.track}`;
+  const data = await jsonp(
+    `https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=song&limit=12&country=US`
   );
-  const seen = new Set();
-  const out = [];
-  for(const r of res){
-    if(r.status!=="fulfilled" || !r.value.results) continue;
-    for(const t of r.value.results){
-      if(t.kind==="song" && t.previewUrl && !seen.has(t.trackId)){
-        seen.add(t.trackId);
-        out.push({track:t.trackName, artist:t.artistName, art:(t.artworkUrl100||"").replace("100x100","300x300"), url:t.previewUrl, link:t.trackViewUrl});
-      }
-    }
+  const wantT = norm(entry.track);
+  const wantA = norm(entry.artist);
+  let best = null, bestScore = -1;
+
+  for(const t of (data && data.results) || []){
+    if(t.kind !== "song" || !t.previewUrl) continue;
+    const gotT = norm(t.trackName);
+    const gotA = norm(t.artistName);
+    const titleOk = gotT === wantT || gotT.startsWith(wantT + " ") || levenshtein(gotT, wantT) <= 2;
+    const artistOk = gotA.includes(wantA) || wantA.includes(gotA);
+    if(!titleOk || !artistOk) continue;
+    const meta = t.trackName + " " + (t.collectionName || "");
+    // never accept versions that aren't the actual song
+    if(/karaoke|tribute|instrumental|made popular by|originally performed|in the style of|8-bit|lullaby/i.test(meta)) continue;
+    // prefer the exact match and the original recording
+    let score = (gotT === wantT ? 4 : 0) + (gotA === wantA ? 2 : 0);
+    if(/live|remix|demo|sped up|slowed|acoustic|re-?recorded/i.test(meta)) score -= 3;
+    if(score > bestScore){ bestScore = score; best = t; }
   }
-  return out.length >= 3 ? out : FALLBACK_SONGS;
+  if(!best) return null;
+
+  const found = {
+    track: entry.track,               // the catalog title is the canonical answer
+    artist: entry.artist,
+    itunesTrack: best.trackName,
+    art: (best.artworkUrl100||"").replace("100x100","400x400"),
+    url: best.previewUrl,
+    link: best.trackViewUrl
+  };
+  previewCache.set(key, found);
+  persistCache();
+  return found;
 }
 
+/* ---------- game UI ---------- */
 function renderDots(){
   els.dots.innerHTML = "";
   SNIPPETS.forEach((sec,i)=>{
     const d = document.createElement("span");
     d.className = "attempt-dot";
-    d.title = `Intento ${i+1}: ${sec}s`;
+    d.title = `Attempt ${i+1}: ${sec}s`;
     if(i < attempt) d.classList.add(song && song.solved ? "won" : "used");
     else if(i === attempt && song && !song.done) d.classList.add("current");
     els.dots.appendChild(d);
@@ -656,16 +860,15 @@ function setPlayingUI(on){
   playing = on;
   els.vinyl.classList.toggle("playing", on);
   els.playIcon.innerHTML = on
-    ? '<svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>'
-    : '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
-  els.playBtn.setAttribute("aria-label", on ? "Pausar" : "Escuchar fragmento");
+    ? '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>'
+    : '<path d="M8 5v14l11-7z"/>';
+  els.playBtn.setAttribute("aria-label", on ? "Pause" : "Play snippet");
 }
 
 function stopPlayback(){
   clearTimeout(stopTimer);
   cancelAnimationFrame(rafId);
-  const audio = els.playBtn._audio;
-  if(audio){ audio.pause(); }
+  if(audio) audio.pause();
   setPlayingUI(false);
   els.fill.style.width = "0%";
 }
@@ -673,17 +876,11 @@ function stopPlayback(){
 function playSnippet(){
   if(!song || song.done || playing) return;
   const len = SNIPPETS[Math.min(attempt, SNIPPETS.length-1)];
-  let audio = els.playBtn._audio;
-  if(!audio){
-    audio = new Audio();
-    audio.preload = "auto";
-    audio.src = song.url;
-    els.playBtn._audio = audio;
-  }
-  audio.currentTime = 0;
+  if(!audio){ audio = new Audio(); audio.preload = "auto"; }
+  if(audio.src !== song.url) audio.src = song.url;
+  try{ audio.currentTime = 0; }catch{}
   setPlayingUI(true);
-  snippetLen = len;
-  playStart = performance.now();
+  const playStart = performance.now();
   const tick = () => {
     if(!playing) return;
     const p = Math.min((performance.now()-playStart)/(len*1000), 1);
@@ -692,23 +889,22 @@ function playSnippet(){
   };
   rafId = requestAnimationFrame(tick);
   audio.play().then(()=>{
-    stopTimer = setTimeout(()=>{ stopPlayback(); }, len*1000);
+    stopTimer = setTimeout(stopPlayback, len*1000);
   }).catch(()=>{
     setPlayingUI(false);
-    showToast("No se pudo reproducir el audio");
+    cancelAnimationFrame(rafId);
+    els.fill.style.width = "0%";
+    showToast("Tap the record again to listen");
   });
 }
 
 function updateHint(){
-  if(!song) return;
-  if(song.done){
-    els.hint.textContent = "";
-    return;
-  }
+  if(!song){ return; }
+  if(song.done){ els.hint.textContent = ""; return; }
   const next = SNIPPETS[Math.min(attempt, SNIPPETS.length-1)];
   els.hint.innerHTML = attempt === 0
-    ? `Primer intento: solo <strong>${next} segundo</strong> de la canción`
-    : `Intento ${attempt+1}: ahora escuchas <strong>${next} segundos</strong>`;
+    ? `First attempt: just <strong>1 second</strong> of the song`
+    : `Attempt ${attempt+1}: now you hear <strong>${next} seconds</strong>`;
 }
 
 function addHistory(text, cls){
@@ -723,22 +919,31 @@ function isCorrect(guess){
   const g = norm(guess);
   if(!g) return false;
   const t = norm(song.track);
-  const full = norm(song.artist + " " + song.track);
-  return g === t || g === full || (g.length > 3 && t.includes(g) && g.split(" ").length === t.split(" ").length);
+  if(!t) return false;
+  if(g === t) return true;
+  if(g === norm(song.artist + " " + song.track)) return true;
+  if(g === norm(song.track + " " + song.artist)) return true;
+  // if the guess is exactly ANOTHER catalog song, it's wrong:
+  // stops "Love Yourself" from passing as "Lose Yourself"
+  if(ALL_TITLES.has(g)) return false;
+  // typo tolerance scaled to the title length
+  const tol = t.length > 14 ? 3 : t.length > 7 ? 2 : 1;
+  return levenshtein(g, t) <= tol;
 }
 
 function lockGuess(lock){
   els.input.disabled = lock;
   els.submit.disabled = lock;
   els.skip.disabled = lock;
-  els.playBtn.disabled = lock || !song;
 }
 
-function endGame(won, guessText){
+function endGame(won){
   song.done = true;
   song.solved = won;
   stopPlayback();
+  closeAC();
   lockGuess(true);
+  els.playBtn.disabled = true;
   els.input.value = "";
   updateHint();
   renderDots();
@@ -746,60 +951,61 @@ function endGame(won, guessText){
   els.streak.textContent = stats.streak;
   els.wins.textContent = stats.wins;
   els.played.textContent = stats.played;
-  els.head.textContent = won ? "¡Correcto!" : "Se acabaron los intentos";
+  setStatus(won ? `Solved in <strong>${attempt}</strong> of 5` : `No luck this time`);
+  els.head.textContent = won ? "Correct!" : "Out of attempts";
   els.head.className = "result-head " + (won ? "good" : "bad");
   els.sub.textContent = won
-    ? `Lo lograste en el intento ${attempt} de 5.`
-    : `La canción era esta. ¡Suerte con la próxima!`;
+    ? `You got it on attempt ${attempt} of 5.`
+    : `Here's the song. Better luck next time!`;
   els.art.src = song.art || "";
+  els.art.alt = `Artwork for ${song.track}`;
   els.title.textContent = song.track;
   els.artist.textContent = song.artist;
   els.link.href = song.link || "#";
+  els.link.style.display = song.link ? "" : "none";
   els.result.classList.add("show");
   els.newSong.focus();
+}
+
+function nextAttempt(delay){
+  if(attempt >= SNIPPETS.length){ endGame(false); return; }
+  setStatus(`Attempt <strong>${attempt+1}</strong> of 5`);
+  updateHint();
+  renderDots();
+  setTimeout(playSnippet, delay);
 }
 
 function onSubmit(e){
   e.preventDefault();
   if(!song || song.done) return;
   const val = els.input.value.trim();
-  if(!val){ showToast("Escribe una respuesta primero"); return; }
+  if(!val){ showToast("Type a guess first"); return; }
+  closeAC();
   if(isCorrect(val)){
     attempt++;
     addHistory(val, "right");
     endGame(true);
-  }else{
-    attempt++;
-    addHistory(val, "wrong");
-    els.form.classList.remove("shake");
-    void els.form.offsetWidth;
-    els.form.classList.add("shake");
-    els.input.value = "";
-    if(attempt >= SNIPPETS.length){
-      endGame(false);
-    }else{
-      setStatus(`Intento <strong>${attempt+1}</strong> de 5`);
-      updateHint();
-      renderDots();
-      setTimeout(playSnippet, 650);
-    }
+    return;
   }
+  attempt++;
+  addHistory(val, "wrong");
+  els.form.classList.remove("shake");
+  void els.form.offsetWidth;
+  els.form.classList.add("shake");
+  els.input.value = "";
+  nextAttempt(650);
 }
 
 function onSkip(){
   if(!song || song.done) return;
+  closeAC();
   attempt++;
-  addHistory("Saltado", "skipped");
-  if(attempt >= SNIPPETS.length){
-    endGame(false);
-  }else{
-    setStatus(`Intento <strong>${attempt+1}</strong> de 5`);
-    updateHint();
-    renderDots();
-    setTimeout(playSnippet, 400);
-  }
+  addHistory("Skipped", "skipped");
+  els.input.value = "";
+  nextAttempt(400);
 }
 
+/* ---------- stats ---------- */
 function getStats(){
   try{ return JSON.parse(localStorage.getItem("songless-stats")) || {streak:0,wins:0,played:0}; }
   catch{ return {streak:0,wins:0,played:0}; }
@@ -808,7 +1014,7 @@ function bumpStats(won){
   const s = getStats();
   s.played++;
   if(won){ s.wins++; s.streak++; } else { s.streak = 0; }
-  localStorage.setItem("songless-stats", JSON.stringify(s));
+  try{ localStorage.setItem("songless-stats", JSON.stringify(s)); }catch{}
   return s;
 }
 
@@ -820,59 +1026,169 @@ function showToast(msg){
   toastTimer = setTimeout(()=>els.toast.classList.remove("show"), 2200);
 }
 
-function pickSong(){
-  let src = pool.filter(s => !recentTracks.includes(s.track));
-  if(src.length === 0) src = pool;
-  const chosen = src[Math.floor(Math.random()*src.length)];
-  recentTracks.push(chosen.track);
-  if(recentTracks.length > 15) recentTracks.shift();
-  return chosen;
+/* ---------- custom autocomplete ---------- */
+let acItems = [];
+let acIndex = -1;
+
+const esc = t => t.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* Highlights only when the match exists literally in the original text,
+   so indexes never drift because of accents or parentheses. */
+function highlight(text, rawQuery){
+  const i = text.toLowerCase().indexOf(rawQuery);
+  if(!rawQuery || i < 0) return esc(text);
+  return esc(text.slice(0,i)) + "<mark>" + esc(text.slice(i, i+rawQuery.length)) + "</mark>" + esc(text.slice(i+rawQuery.length));
+}
+
+function openAC(list, q){
+  acItems = list;
+  acIndex = -1;
+  if(!list.length){
+    els.ac.innerHTML = `<p class="ac-empty">No matches</p>`;
+  }else{
+    els.ac.innerHTML = list.map((s,i)=>
+      `<button type="button" class="ac-item" role="option" id="ac-opt-${i}" aria-selected="false" data-i="${i}">
+         <span class="t">${highlight(s.track, q)}</span>
+         <span class="a">${highlight(s.artist, q)}</span>
+       </button>`).join("");
+  }
+  els.ac.classList.add("show");
+  els.input.setAttribute("aria-expanded","true");
+}
+
+function closeAC(){
+  els.ac.classList.remove("show");
+  els.ac.innerHTML = "";
+  els.input.setAttribute("aria-expanded","false");
+  els.input.removeAttribute("aria-activedescendant");
+  acItems = [];
+  acIndex = -1;
+}
+
+function moveAC(delta){
+  const nodes = els.ac.querySelectorAll(".ac-item");
+  if(!nodes.length) return;
+  acIndex = (acIndex + delta + nodes.length) % nodes.length;
+  nodes.forEach((n,i)=>n.setAttribute("aria-selected", i === acIndex ? "true" : "false"));
+  nodes[acIndex].scrollIntoView?.({block:"nearest"});
+  els.input.setAttribute("aria-activedescendant", "ac-opt-" + acIndex);
+}
+
+function chooseAC(i){
+  const s = acItems[i];
+  if(!s) return;
+  els.input.value = s.track;
+  closeAC();
+  els.input.focus();
+}
+
+function onInput(){
+  const raw = els.input.value.trim();
+  const rawLower = raw.toLowerCase();
+  const q = norm(raw);
+  if(q.length < 1){ closeAC(); return; }
+  const lib = LIBRARY[currentGenre];
+  const starts = [], contains = [];
+  for(const s of lib){
+    const t = norm(s.track), a = norm(s.artist);
+    if(t.startsWith(q)) starts.push(s);
+    else if(t.includes(q) || a.includes(q)) contains.push(s);
+    if(starts.length >= 8) break;
+  }
+  openAC([...starts, ...contains].slice(0, 8), rawLower);
+}
+
+els.input.addEventListener("input", onInput);
+els.input.addEventListener("focus", ()=>{ if(els.input.value.trim()) onInput(); });
+els.input.addEventListener("keydown", e => {
+  const open = els.ac.classList.contains("show");
+  if(e.key === "ArrowDown"){ e.preventDefault(); open ? moveAC(1) : onInput(); }
+  else if(e.key === "ArrowUp"){ if(open){ e.preventDefault(); moveAC(-1); } }
+  else if(e.key === "Enter"){ if(open && acIndex >= 0){ e.preventDefault(); chooseAC(acIndex); } }
+  else if(e.key === "Escape"){ if(open){ e.preventDefault(); closeAC(); } }
+});
+els.ac.addEventListener("mousedown", e => {
+  const item = e.target.closest(".ac-item");
+  if(!item) return;
+  e.preventDefault();
+  chooseAC(Number(item.dataset.i));
+});
+document.addEventListener("click", e => {
+  if(!e.target.closest(".combo")) closeAC();
+});
+
+/* ---------- round ---------- */
+function pickEntry(){
+  const lib = LIBRARY[currentGenre];
+  let src = lib.filter(s => !recentTracks.includes(s.artist + "|" + s.track));
+  if(!src.length) src = lib.slice();
+  return shuffle(src.slice());
 }
 
 async function startGame(){
   if(loading) return;
   loading = true;
+  const token = ++roundToken;
+
+  stopPlayback();
+  closeAC();
   els.result.classList.remove("show");
   els.history.innerHTML = "";
   els.fill.style.width = "0%";
+  els.input.value = "";
   attempt = 0;
   song = null;
-  setStatus(`Buscando canción · ${GENRES[currentGenre].label}`);
-  els.hint.textContent = "Preparando el tocadiscos…";
+  els.retry.hidden = true;
+  setStatus(`Finding a song · ${GENRES[currentGenre].label}`);
+  els.hint.textContent = "Warming up the turntable…";
   lockGuess(true);
   els.playBtn.disabled = true;
   document.querySelectorAll(".chip").forEach(c => c.disabled = true);
   renderDots();
 
-  if(poolCache[currentGenre]){
-    pool = poolCache[currentGenre];
-  }else{
-    const loaded = await loadPool(currentGenre);
-    if(loaded !== FALLBACK_SONGS){
-      poolCache[currentGenre] = loaded;
-      pool = loaded;
-    }else{
-      pool = FALLBACK_SONGS;
-      showToast("No cargó la lista del género, uso la local");
-    }
+  const candidates = pickEntry();
+  let found = null;
+  // cached entries first: instant load, zero requests
+  const cached = candidates.find(c => previewCache.has(c.artist + "|" + c.track));
+  if(cached) found = previewCache.get(cached.artist + "|" + cached.track);
+
+  for(let i = 0; i < candidates.length && i < 8 && !found; i++){
+    try{ found = await resolvePreview(candidates[i]); }
+    catch{ await new Promise(r => setTimeout(r, 350)); }   // retry with the next one
+    if(token !== roundToken) return;         // the user switched genre
   }
-  song = pickSong();
-  song.done = false;
-  song.solved = false;
-  delete els.playBtn._audio;
 
-  const opts = shuffle(pool.slice(0, 60)).map(s => `${s.artist} — ${s.track}`);
-  $("songList").innerHTML = opts.map(o=>`<option value="${o.replace(/"/g,"&quot;")}"></option>`).join("");
+  if(token !== roundToken) return;
+  loading = false;
+  document.querySelectorAll(".chip").forEach(c => c.disabled = false);
 
-  setStatus(`Intento <strong>1</strong> de 5`);
+  if(!found){
+    setStatus("Couldn't load a song");
+    els.hint.innerHTML = `No response from iTunes.`;
+    els.retry.hidden = false;
+    els.retry.focus();
+    showToast("No response from iTunes, try again");
+    return;
+  }
+
+  // background preload of another track in this genre (instant next round)
+  const next = candidates.find(c => !previewCache.has(c.artist + "|" + c.track));
+  if(next) setTimeout(()=>{ resolvePreview(next).catch(()=>{}); }, 1500);
+
+  song = Object.assign({}, found, {done:false, solved:false});
+  recentTracks.push(song.artist + "|" + song.track);
+  if(recentTracks.length > 25) recentTracks.shift();
+
+  setStatus(`Attempt <strong>1</strong> of 5`);
   updateHint();
   renderDots();
   lockGuess(false);
   els.playBtn.disabled = false;
-  loading = false;
-  document.querySelectorAll(".chip").forEach(c => c.disabled = false);
+  // focus the field on desktop; avoid popping the keyboard on touch
+  if(window.matchMedia("(hover: hover)").matches) els.input.focus();
 }
 
+/* ---------- genres ---------- */
 function renderChips(){
   const bar = $("genreBar");
   Object.entries(GENRES).forEach(([id,g])=>{
@@ -881,25 +1197,37 @@ function renderChips(){
     b.className = "chip" + (id === currentGenre ? " active" : "");
     b.dataset.genre = id;
     b.textContent = g.label;
+    b.setAttribute("aria-pressed", id === currentGenre ? "true" : "false");
     b.addEventListener("click", ()=>setGenre(id));
     bar.appendChild(b);
   });
 }
 
 function setGenre(id){
-  if(id === currentGenre || loading) return;
+  if(id === currentGenre) return;
   currentGenre = id;
-  document.querySelectorAll(".chip").forEach(c => c.classList.toggle("active", c.dataset.genre === id));
+  document.querySelectorAll(".chip").forEach(c => {
+    const on = c.dataset.genre === id;
+    c.classList.toggle("active", on);
+    c.setAttribute("aria-pressed", on ? "true" : "false");
+  });
+  roundToken++;        // invalidates any in-flight load
+  loading = false;
   stopPlayback();
   startGame();
 }
 
-els.playBtn.addEventListener("click", ()=>{
-  if(playing){ stopPlayback(); } else { playSnippet(); }
-});
+els.playBtn.addEventListener("click", ()=>{ playing ? stopPlayback() : playSnippet(); });
 els.form.addEventListener("submit", onSubmit);
 els.skip.addEventListener("click", onSkip);
-els.newSong.addEventListener("click", startGame);
+els.newSong.addEventListener("click", ()=>startGame());
+els.retry.addEventListener("click", ()=>startGame());
+document.addEventListener("keydown", e => {
+  if(e.code === "Space" && e.target === document.body && song && !song.done){
+    e.preventDefault();
+    playing ? stopPlayback() : playSnippet();
+  }
+});
 
 (function init(){
   renderChips();
