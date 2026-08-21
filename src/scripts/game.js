@@ -40,7 +40,7 @@ let audio = null;
 const recentTracks = [];
 
 /* ---------- preview cache ---------- */
-const CACHE_KEY = "songless-previews-v1";
+const CACHE_KEY = "beatle-previews-v1";
 const previewCache = new Map(Object.entries((() => {
   try { return JSON.parse(localStorage.getItem(CACHE_KEY)) || {}; } catch { return {}; }
 })()));
@@ -336,7 +336,7 @@ function shareResult() {
   if (!song || !song.done) return;
   const grid = results.map((r) => SQUARES[r.kind]).join("");
   const score = song.solved ? `${attempt}/${SNIPPETS.length}` : `X/${SNIPPETS.length}`;
-  const text = `Songless · ${GENRES[currentGenre].label} ${score}\n${grid}`;
+  const text = `Beatle · ${GENRES[currentGenre].label} ${score}\n${grid}`;
   const done = () => showToast("Copied to clipboard");
   if (navigator.share) navigator.share({ text }).catch(() => {});
   else if (navigator.clipboard) navigator.clipboard.writeText(text).then(done).catch(() => showToast("Couldn't copy"));
