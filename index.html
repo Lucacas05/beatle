@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Songless — Adivina la canción</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500..900;1,9..144,500..900&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg: oklch(0.952 0.028 84);
+  --surface: oklch(0.982 0.014 86);
+  --ink: oklch(0.235 0.045 52);
+  --ink-soft: oklch(0.44 0.05 58);
+  --line: oklch(0.87 0.035 78);
+  --accent: oklch(0.645 0.195 41);
+  --accent-deep: oklch(0.505 0.175 39);
+  --accent-wash: oklch(0.90 0.06 48);
+  --good: oklch(0.53 0.135 152);
+  --good-wash: oklch(0.92 0.05 150);
+  --bad: oklch(0.56 0.185 27);
+  --bad-wash: oklch(0.91 0.05 32);
+  --radius: 14px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:"Hanken Grotesk",sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+  min-height:100dvh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  background-image:
+    repeating-radial-gradient(circle at 50% -20%, transparent 0 46px, oklch(0.93 0.03 82 / .7) 46px 47px);
+}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input{font:inherit;color:inherit}
+
+.page{
+  width:min(680px, 100%);
+  padding:clamp(16px, 3vw, 32px);
+  display:flex;
+  flex-direction:column;
+  flex:1;
+}
+
+header{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:12px;
+  padding-bottom:clamp(18px, 3vw, 28px);
+  border-bottom:2px solid var(--ink);
+  animation:rise .6s cubic-bezier(.22,1,.36,1) both;
+}
+.logo{
+  font-family:"Fraunces",serif;
+  font-optical-sizing:auto;
+  font-weight:900;
+  font-size:clamp(30px, 6vw, 44px);
+  letter-spacing:-0.02em;
+  line-height:1;
+  display:flex;
+  align-items:center;
+  gap:.35em;
+}
+.logo .disc{
+  width:.72em;height:.72em;border-radius:50%;
+  background:
+    radial-gradient(circle, var(--accent) 0 26%, var(--ink) 27% 34%, transparent 35%),
+    repeating-radial-gradient(circle, var(--ink) 0 1.5px, transparent 1.5px 4px),
+    var(--ink);
+  position:relative;
+  flex:none;
+}
+.logo em{
+  font-style:italic;
+  font-weight:600;
+  color:var(--accent-deep);
+}
+.tagline{
+  font-size:13px;
+  font-weight:600;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--ink-soft);
+  text-align:right;
+}
+
+.genres{
+  margin-top:clamp(16px, 3vw, 24px);
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:8px;
+  animation:rise .6s cubic-bezier(.22,1,.36,1) .05s both;
+}
+.genres-label{
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.09em;
+  text-transform:uppercase;
+  color:var(--ink-soft);
+  margin-right:2px;
+}
+.chip{
+  padding:8px 15px;
+  border-radius:99px;
+  border:1.5px solid var(--line);
+  background:var(--surface);
+  font-weight:600;
+  font-size:13.5px;
+  color:var(--ink-soft);
+  transition:border-color .2s, color .2s, transform .2s cubic-bezier(.22,1,.36,1), background .2s;
+}
+.chip:hover:not(:disabled){border-color:var(--ink);color:var(--ink);transform:translateY(-1px)}
+.chip:focus-visible{outline:3px solid var(--accent-deep);outline-offset:2px}
+.chip.active{
+  background:var(--ink);
+  border-color:var(--ink);
+  color:oklch(0.96 0.02 84);
+}
+.chip:disabled{opacity:.45;cursor:wait}
+
+.status{
+  margin-top:clamp(14px, 2.5vw, 22px);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  animation:rise .6s cubic-bezier(.22,1,.36,1) .08s both;
+}
+.status p{font-size:15px;font-weight:600;color:var(--ink-soft)}
+.status p strong{color:var(--ink)}
+.attempts{
+  display:flex;
+  gap:7px;
+  align-items:center;
+}
+.attempt-dot{
+  width:34px;height:10px;
+  border-radius:99px;
+  background:var(--surface);
+  border:1.5px solid var(--line);
+  transition:all .35s cubic-bezier(.22,1,.36,1);
+}
+.attempt-dot.current{
+  border-color:var(--accent);
+  animation:pulse 1.6s ease-in-out infinite;
+}
+.attempt-dot.used{background:var(--bad);border-color:var(--bad)}
+.attempt-dot.won{background:var(--good);border-color:var(--good)}
+
+.stage{
+  margin-top:clamp(20px, 4vw, 30px);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:clamp(16px, 3vw, 22px);
+  animation:rise .6s cubic-bezier(.22,1,.36,1) .16s both;
+}
+
+.vinyl-wrap{
+  position:relative;
+  width:clamp(180px, 42vw, 230px);
+  aspect-ratio:1;
+}
+.vinyl{
+  width:100%;height:100%;
+  border-radius:50%;
+  background:
+    radial-gradient(circle at 35% 30%, oklch(0.98 0.01 85 / .14), transparent 55%),
+    repeating-radial-gradient(circle, oklch(0.30 0.03 55) 0 2px, oklch(0.245 0.03 55) 2px 5px),
+    oklch(0.245 0.03 55);
+  box-shadow:
+    0 18px 40px -14px oklch(0.3 0.05 50 / .5),
+    inset 0 0 0 1px oklch(0.4 0.04 55 / .6);
+  display:grid;
+  place-items:center;
+  animation:spin 3.2s linear infinite;
+  animation-play-state:paused;
+}
+.vinyl.playing{animation-play-state:running}
+.vinyl::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:50%;
+  background:conic-gradient(from 200deg, transparent 0deg, oklch(1 0 0 / .07) 40deg, transparent 110deg);
+  pointer-events:none;
+}
+.vinyl-label{
+  width:38%;
+  aspect-ratio:1;
+  border-radius:50%;
+  background:var(--accent);
+  background-image:radial-gradient(circle at 40% 35%, oklch(0.72 0.17 48), var(--accent));
+  display:grid;
+  place-items:center;
+  box-shadow:inset 0 0 0 2px oklch(0.98 0.02 80 / .35);
+}
+.vinyl-label span{
+  width:22%;
+  aspect-ratio:1;
+  border-radius:50%;
+  background:var(--bg);
+  box-shadow:inset 0 1px 3px oklch(0.3 0.05 50 / .6);
+}
+.play-btn{
+  position:absolute;
+  inset:0;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  transition:transform .25s cubic-bezier(.22,1,.36,1);
+}
+.play-btn:hover{transform:scale(1.04)}
+.play-btn:active{transform:scale(.97)}
+.play-btn:focus-visible{outline:3px solid var(--accent-deep);outline-offset:6px}
+.play-icon{
+  width:54px;height:54px;
+  border-radius:50%;
+  background:var(--surface);
+  display:grid;
+  place-items:center;
+  box-shadow:0 6px 18px -6px oklch(0.2 0.05 50 / .55);
+  transition:background .2s;
+}
+.play-btn:hover .play-icon{background:#fff}
+.play-icon svg{width:22px;height:22px;fill:var(--ink)}
+.snippet-bar{
+  width:min(320px, 70vw);
+  height:6px;
+  border-radius:99px;
+  background:var(--line);
+  overflow:hidden;
+}
+.snippet-bar i{
+  display:block;
+  height:100%;
+  width:0%;
+  border-radius:99px;
+  background:linear-gradient(90deg, var(--accent-deep), var(--accent));
+}
+.snippet-hint{
+  font-size:13.5px;
+  font-weight:600;
+  color:var(--ink-soft);
+  min-height:1.4em;
+  text-align:center;
+}
+.snippet-hint strong{color:var(--accent-deep)}
+
+.guess-zone{
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  animation:rise .6s cubic-bezier(.22,1,.36,1) .24s both;
+}
+.guess-row{
+  display:flex;
+  gap:8px;
+}
+.guess-row input{
+  flex:1;
+  min-width:0;
+  padding:14px 18px;
+  border-radius:var(--radius);
+  border:2px solid var(--ink);
+  background:var(--surface);
+  font-size:16px;
+  font-weight:500;
+  transition:box-shadow .2s, opacity .2s;
+}
+.guess-row input::placeholder{color:oklch(0.55 0.04 60)}
+.guess-row input:focus{outline:none;box-shadow:4px 4px 0 var(--accent)}
+.guess-row input:disabled{opacity:.45}
+.btn{
+  padding:14px 22px;
+  border-radius:var(--radius);
+  font-weight:700;
+  font-size:15.5px;
+  border:2px solid var(--ink);
+  transition:transform .15s cubic-bezier(.22,1,.36,1), box-shadow .15s, background .2s;
+  white-space:nowrap;
+}
+.btn:focus-visible{outline:3px solid var(--accent-deep);outline-offset:3px}
+.btn-primary{
+  background:var(--accent);
+  color:oklch(0.99 0.008 85);
+  box-shadow:4px 4px 0 var(--ink);
+}
+.btn-primary:hover:not(:disabled){transform:translate(-1px,-1px);box-shadow:5px 5px 0 var(--ink)}
+.btn-primary:active:not(:disabled){transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
+.btn-ghost{
+  background:transparent;
+  color:var(--ink-soft);
+  border-color:var(--line);
+  font-weight:600;
+}
+.btn-ghost:hover:not(:disabled){border-color:var(--ink);color:var(--ink)}
+.btn-ghost:disabled{opacity:.4;cursor:not-allowed}
+
+.history{
+  list-style:none;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  margin-top:4px;
+}
+.history li{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:11px 16px;
+  border-radius:10px;
+  font-weight:600;
+  font-size:15px;
+  animation:drop .4s cubic-bezier(.22,1,.36,1) both;
+}
+.history li.wrong{
+  background:var(--bad-wash);
+  color:var(--bad);
+  border-left:5px solid var(--bad);
+}
+.history li.right{
+  background:var(--good-wash);
+  color:var(--good);
+  border-left:5px solid var(--good);
+}
+.history li.skipped{
+  background:var(--surface);
+  color:var(--ink-soft);
+  border-left:5px solid var(--line);
+  font-style:italic;
+}
+.history .n{
+  font-family:"Fraunces",serif;
+  font-weight:900;
+  font-size:17px;
+  opacity:.75;
+  min-width:1.2em;
+}
+.history .txt{
+  flex:1;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.result{
+  margin-top:clamp(18px, 3vw, 26px);
+  border:2px solid var(--ink);
+  border-radius:18px;
+  background:var(--surface);
+  box-shadow:6px 6px 0 var(--accent);
+  padding:clamp(20px, 4vw, 28px);
+  display:none;
+  animation:pop .5s cubic-bezier(.22,1,.36,1) both;
+}
+.result.show{display:block}
+.result-head{
+  font-family:"Fraunces",serif;
+  font-weight:900;
+  font-size:clamp(24px, 5vw, 32px);
+  letter-spacing:-0.01em;
+  line-height:1.1;
+}
+.result-head.good{color:var(--good)}
+.result-head.bad{color:var(--bad)}
+.result-sub{
+  margin-top:6px;
+  font-size:15px;
+  font-weight:600;
+  color:var(--ink-soft);
+}
+.song-card{
+  margin-top:18px;
+  display:flex;
+  gap:16px;
+  align-items:center;
+}
+.song-art{
+  width:96px;height:96px;
+  border-radius:12px;
+  object-fit:cover;
+  border:2px solid var(--ink);
+  box-shadow:4px 4px 0 var(--line);
+  flex:none;
+}
+.song-meta{min-width:0}
+.song-title{
+  font-family:"Fraunces",serif;
+  font-weight:800;
+  font-size:20px;
+  line-height:1.15;
+}
+.song-artist{font-weight:600;color:var(--ink-soft);margin-top:2px}
+.song-link{
+  display:inline-block;
+  margin-top:8px;
+  font-size:13.5px;
+  font-weight:700;
+  color:var(--accent-deep);
+  text-decoration:none;
+  border-bottom:2px solid var(--accent-wash);
+  transition:border-color .2s;
+}
+.song-link:hover{border-color:var(--accent-deep)}
+.stats-strip{
+  margin-top:20px;
+  padding-top:16px;
+  border-top:1.5px dashed var(--line);
+  display:flex;
+  gap:clamp(16px, 5vw, 36px);
+}
+.stat b{
+  font-family:"Fraunces",serif;
+  font-weight:900;
+  font-size:22px;
+  display:block;
+}
+.stat span{
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.07em;
+  text-transform:uppercase;
+  color:var(--ink-soft);
+}
+.result-actions{margin-top:20px;display:flex;justify-content:flex-end}
+
+footer{
+  margin-top:auto;
+  padding:clamp(24px, 5vw, 40px) 0 18px;
+  text-align:center;
+  font-size:12.5px;
+  font-weight:600;
+  color:oklch(0.55 0.04 62);
+}
+footer a{color:inherit}
+
+.toast{
+  position:fixed;
+  left:50%;
+  bottom:28px;
+  transform:translateX(-50%) translateY(20px);
+  background:var(--ink);
+  color:var(--bg);
+  padding:11px 20px;
+  border-radius:99px;
+  font-weight:600;
+  font-size:14.5px;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .3s, transform .3s cubic-bezier(.22,1,.36,1);
+  z-index:10;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.shake{animation:shake .45s cubic-bezier(.36,.07,.19,.97)}
+
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes drop{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:scale(.94) translateY(10px)}to{opacity:1;transform:none}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{
+  0%,100%{box-shadow:0 0 0 0 oklch(0.645 0.195 41 / .45)}
+  50%{box-shadow:0 0 0 5px oklch(0.645 0.195 41 / 0)}
+}
+@keyframes shake{
+  10%,90%{transform:translateX(-2px)}
+  20%,80%{transform:translateX(4px)}
+  30%,50%,70%{transform:translateX(-6px)}
+  40%,60%{transform:translateX(6px)}
+}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1 class="logo"><span class="disc" aria-hidden="true"></span>SONG<em>LESS</em></h1>
+    <p class="tagline">Adivina la<br>canción</p>
+  </header>
+
+  <div class="genres" id="genreBar" role="group" aria-label="Elegir género musical">
+    <span class="genres-label">Género</span>
+  </div>
+
+  <div class="status">
+    <p id="statusText">Cargando canción…</p>
+    <div class="attempts" id="attemptDots" aria-label="Intentos"></div>
+  </div>
+
+  <main class="stage">
+    <div class="vinyl-wrap">
+      <div class="vinyl" id="vinyl">
+        <div class="vinyl-label"><span></span></div>
+      </div>
+      <button class="play-btn" id="playBtn" aria-label="Escuchar fragmento" disabled>
+        <span class="play-icon">
+          <svg id="playIcon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+        </span>
+      </button>
+    </div>
+    <div class="snippet-bar" aria-hidden="true"><i id="snippetFill"></i></div>
+    <p class="snippet-hint" id="snippetHint">Presiona el disco para escuchar</p>
+
+    <div class="guess-zone">
+      <form class="guess-row" id="guessForm" autocomplete="off">
+        <input type="text" id="guessInput" list="songList" placeholder="Escribe tu respuesta…" disabled>
+        <datalist id="songList"></datalist>
+        <button type="submit" class="btn btn-primary" id="submitBtn" disabled>Enviar</button>
+        <button type="button" class="btn btn-ghost" id="skipBtn" disabled>Saltar</button>
+      </form>
+      <ul class="history" id="history"></ul>
+    </div>
+
+    <section class="result" id="result" aria-live="polite">
+      <h2 class="result-head" id="resultHead"></h2>
+      <p class="result-sub" id="resultSub"></p>
+      <div class="song-card">
+        <img class="song-art" id="songArt" alt="Portada del álbum" referrerpolicy="no-referrer">
+        <div class="song-meta">
+          <p class="song-title" id="songTitle"></p>
+          <p class="song-artist" id="songArtist"></p>
+          <a class="song-link" id="songLink" href="#" target="_blank" rel="noopener">Escuchar en Apple Music ↗</a>
+        </div>
+      </div>
+      <div class="stats-strip">
+        <div class="stat"><b id="statStreak">0</b><span>Racha</span></div>
+        <div class="stat"><b id="statWins">0</b><span>Victorias</span></div>
+        <div class="stat"><b id="statPlayed">0</b><span>Jugadas</span></div>
+      </div>
+      <div class="result-actions">
+        <button class="btn btn-primary" id="newSongBtn">Nueva canción</button>
+      </div>
+    </section>
+  </main>
+
+  <footer>Fragments de audio vía iTunes Preview · Sin registro, solo oído</footer>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const SNIPPETS = [1, 2, 4, 8, 15];
+const GENRES = {
+  mixto: { label:"Mixto", terms:["bad bunny","karol g","taylor swift","the weeknd","dua lipa","billie eilish","quevedo","bizarrap","bruno mars","sabrina carpenter","olivia rodrigo","harry styles","feid","shakira","coldplay","rihanna","post malone","miley cyrus","lady gaga","rosalia","peso pluma","ariana grande","justin bieber","ed sheeran","sia","imagine dragons","manuel turizo","ryan castro","blessd","lana del rey"] },
+  reggaeton: { label:"Reggaetón", terms:["bad bunny","rauw alejandro","karol g","feid","j balvin","ozuna","daddy yankee","myke towers","arcangel","wisin y yandel","quevedo","peso pluma","blessd","ryan castro"] },
+  pop: { label:"Pop", terms:["taylor swift","dua lipa","sabrina carpenter","olivia rodrigo","harry styles","ariana grande","bruno mars","ed sheeran","billie eilish","miley cyrus","justin bieber","lady gaga","lana del rey"] },
+  rock: { label:"Rock", terms:["queen","the beatles","coldplay","imagine dragons","nirvana","red hot chili peppers","linkin park","guns n roses","foo fighters","the rolling stones","oasis","bon jovi"] },
+  hiphop: { label:"Hip-Hop", terms:["drake","kendrick lamar","travis scott","eminem","kanye west","nicki minaj","post malone","future","j cole","tyler the creator","snoop dogg","50 cent"] },
+  latina: { label:"Latina", terms:["shakira","carlos vives","marc anthony","hector lavoe","willie colon","celia cruz","juan luis guerra","grupo 5","agua marina","armonia 10","gente de zona","ruben blades"] }
+};
+
+const FALLBACK_SONGS = [
+  {track:"Blinding Lights",artist:"The Weeknd",art:"https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/a6/6e/bf/a66ebf79-5008-8948-b352-a790fc87446b/19UM1IM04638.rgb.jpg/300x300bb.jpg",url:"https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/17/b4/8f/17b48f9a-0b93-6bb8-fe1d-3a16623c2cfb/mzaf_9560252727299052414.plus.aac.p.m4a",link:"https://music.apple.com/us/album/blinding-lights/1488408555?i=1488408568&uo=4"},
+  {track:"Shape of You",artist:"Ed Sheeran",art:"https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/15/e6/e8/15e6e8a4-4190-6a8b-86c3-ab4a51b88288/190295851286.jpg/300x300bb.jpg",url:"https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/44/c7/4f/44c74f0d-72dc-6143-d4d0-ba14d661ca0d/mzaf_9566898362556366703.plus.aac.p.m4a",link:"https://music.apple.com/us/album/shape-of-you/1193701079?i=1193701392&uo=4"},
+  {track:"NUEVAYoL",artist:"Bad Bunny",art:"https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/90/5e/7e/905e7ed5-a8fa-a8f3-cd06-0028fdf3afaa/199066342442.jpg/300x300bb.jpg",url:"https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/2e/97/55/2e97555a-1ed3-9e07-de57-07e1213186c9/mzaf_7594924455925081680.plus.aac.p.m4a",link:"https://music.apple.com/us/album/nuevayol/1787022393?i=1787022572&uo=4"},
+  {track:"Call Out My Name",artist:"The Weeknd",art:"https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/2a/aa/b4/2aaab42a-a4cb-a600-4a25-d78961495960/18UMGIM17204.rgb.jpg/300x300bb.jpg",url:"https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/d1/2f/3d/d12f3d43-a2e2-eba4-8db5-91f3f3c13f5a/mzaf_8470584399239689698.plus.aac.p.m4a",link:"https://music.apple.com/us/album/call-out-my-name/1363309866?i=1363310482&uo=4"},
+  {track:"WILDFLOWER",artist:"Billie Eilish",art:"https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/92/9f/69/929f69f1-9977-3a44-d674-11f70c852d1b/24UMGIM36186.rgb.jpg/300x300bb.jpg",url:"https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/de/c3/e8/dec3e884-7237-9622-718a-12c5f48c5ca2/mzaf_3134455671785145822.plus.aac.p.m4a",link:"https://music.apple.com/us/album/wildflower/1739659134?i=1739659144&uo=4"},
+  {track:"Si Antes Te Hubiera Conocido",artist:"KAROL G",art:"https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/a0/60/94/a060947c-54d8-0fad-c558-eed12600224c/24UMGIM62705.rgb.jpg/300x300bb.jpg",url:"https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/0f/07/33/0f0733c9-76b3-39f9-9115-9031acd75839/mzaf_249954100848422596.plus.aac.p.m4a",link:"https://music.apple.com/us/album/si-antes-te-hubiera-conocido/1752031533?i=1752031539&uo=4"},
+  {track:"Quevedo: Bzrp Music Sessions, Vol. 52/66",artist:"Bizarrap & Quevedo",art:"https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/a0/b5/76/a0b576ad-667d-1140-4694-23e5d598e89e/196925240499.jpg/300x300bb.jpg",url:"https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/f0/0e/3c/f00e3c3a-2d1c-3af5-69f7-20acb1b07a15/mzaf_2006049997653917583.plus.aac.p.m4a",link:"https://music.apple.com/us/album/quevedo-bzrp-music-sessions-vol-52-66/1632746799?i=1632746802&uo=4"}
+];
+
+const $ = id => document.getElementById(id);
+const els = {
+  status:$("statusText"), dots:$("attemptDots"), vinyl:$("vinyl"),
+  playBtn:$("playBtn"), playIcon:$("playIcon"), fill:$("snippetFill"),
+  hint:$("snippetHint"), form:$("guessForm"), input:$("guessInput"),
+  submit:$("submitBtn"), skip:$("skipBtn"), history:$("history"),
+  result:$("result"), head:$("resultHead"), sub:$("resultSub"),
+  art:$("songArt"), title:$("songTitle"), artist:$("songArtist"),
+  link:$("songLink"), toast:$("toast"), newSong:$("newSongBtn"),
+  streak:$("statStreak"), wins:$("statWins"), played:$("statPlayed")
+};
+
+let pool = [];
+let song = null;
+let attempt = 0;
+let playing = false;
+let stopTimer = null;
+let rafId = null;
+let playStart = 0;
+let snippetLen = 0;
+let currentGenre = "mixto";
+const poolCache = {};
+const recentTracks = [];
+let loading = false;
+
+const norm = s => (s||"").toLowerCase()
+  .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+  .replace(/\(.*?\)|\[.*?\]/g," ")
+  .replace(/[^a-z0-9 ]/g," ")
+  .replace(/\s+/g," ").trim();
+
+function shuffle(a){
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+
+function jsonp(url){
+  return new Promise((resolve, reject) => {
+    const cb = "itcb_" + Math.random().toString(36).slice(2);
+    const s = document.createElement("script");
+    const timer = setTimeout(()=>{ cleanup(); reject(new Error("timeout")); }, 8000);
+    function cleanup(){ clearTimeout(timer); delete window[cb]; s.remove(); }
+    window[cb] = data => { cleanup(); resolve(data); };
+    s.onerror = () => { cleanup(); reject(new Error("load error")); };
+    s.src = url + "&callback=" + cb;
+    document.head.appendChild(s);
+  });
+}
+
+async function loadPool(genreId){
+  const terms = shuffle([...GENRES[genreId].terms]).slice(0,5);
+  const res = await Promise.allSettled(
+    terms.map(t => jsonp(`https://itunes.apple.com/search?term=${encodeURIComponent(t)}&entity=song&limit=10&country=US`))
+  );
+  const seen = new Set();
+  const out = [];
+  for(const r of res){
+    if(r.status!=="fulfilled" || !r.value.results) continue;
+    for(const t of r.value.results){
+      if(t.kind==="song" && t.previewUrl && !seen.has(t.trackId)){
+        seen.add(t.trackId);
+        out.push({track:t.trackName, artist:t.artistName, art:(t.artworkUrl100||"").replace("100x100","300x300"), url:t.previewUrl, link:t.trackViewUrl});
+      }
+    }
+  }
+  return out.length >= 3 ? out : FALLBACK_SONGS;
+}
+
+function renderDots(){
+  els.dots.innerHTML = "";
+  SNIPPETS.forEach((sec,i)=>{
+    const d = document.createElement("span");
+    d.className = "attempt-dot";
+    d.title = `Intento ${i+1}: ${sec}s`;
+    if(i < attempt) d.classList.add(song && song.solved ? "won" : "used");
+    else if(i === attempt && song && !song.done) d.classList.add("current");
+    els.dots.appendChild(d);
+  });
+}
+
+function setStatus(html){ els.status.innerHTML = html; }
+
+function setPlayingUI(on){
+  playing = on;
+  els.vinyl.classList.toggle("playing", on);
+  els.playIcon.innerHTML = on
+    ? '<svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>'
+    : '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+  els.playBtn.setAttribute("aria-label", on ? "Pausar" : "Escuchar fragmento");
+}
+
+function stopPlayback(){
+  clearTimeout(stopTimer);
+  cancelAnimationFrame(rafId);
+  const audio = els.playBtn._audio;
+  if(audio){ audio.pause(); }
+  setPlayingUI(false);
+  els.fill.style.width = "0%";
+}
+
+function playSnippet(){
+  if(!song || song.done || playing) return;
+  const len = SNIPPETS[Math.min(attempt, SNIPPETS.length-1)];
+  let audio = els.playBtn._audio;
+  if(!audio){
+    audio = new Audio();
+    audio.preload = "auto";
+    audio.src = song.url;
+    els.playBtn._audio = audio;
+  }
+  audio.currentTime = 0;
+  setPlayingUI(true);
+  snippetLen = len;
+  playStart = performance.now();
+  const tick = () => {
+    if(!playing) return;
+    const p = Math.min((performance.now()-playStart)/(len*1000), 1);
+    els.fill.style.width = (p*100)+"%";
+    if(p < 1) rafId = requestAnimationFrame(tick);
+  };
+  rafId = requestAnimationFrame(tick);
+  audio.play().then(()=>{
+    stopTimer = setTimeout(()=>{ stopPlayback(); }, len*1000);
+  }).catch(()=>{
+    setPlayingUI(false);
+    showToast("No se pudo reproducir el audio");
+  });
+}
+
+function updateHint(){
+  if(!song) return;
+  if(song.done){
+    els.hint.textContent = "";
+    return;
+  }
+  const next = SNIPPETS[Math.min(attempt, SNIPPETS.length-1)];
+  els.hint.innerHTML = attempt === 0
+    ? `Primer intento: solo <strong>${next} segundo</strong> de la canción`
+    : `Intento ${attempt+1}: ahora escuchas <strong>${next} segundos</strong>`;
+}
+
+function addHistory(text, cls){
+  const li = document.createElement("li");
+  li.className = cls;
+  li.innerHTML = `<span class="n">${attempt}</span><span class="txt"></span>`;
+  li.querySelector(".txt").textContent = text;
+  els.history.appendChild(li);
+}
+
+function isCorrect(guess){
+  const g = norm(guess);
+  if(!g) return false;
+  const t = norm(song.track);
+  const full = norm(song.artist + " " + song.track);
+  return g === t || g === full || (g.length > 3 && t.includes(g) && g.split(" ").length === t.split(" ").length);
+}
+
+function lockGuess(lock){
+  els.input.disabled = lock;
+  els.submit.disabled = lock;
+  els.skip.disabled = lock;
+  els.playBtn.disabled = lock || !song;
+}
+
+function endGame(won, guessText){
+  song.done = true;
+  song.solved = won;
+  stopPlayback();
+  lockGuess(true);
+  els.input.value = "";
+  updateHint();
+  renderDots();
+  const stats = bumpStats(won);
+  els.streak.textContent = stats.streak;
+  els.wins.textContent = stats.wins;
+  els.played.textContent = stats.played;
+  els.head.textContent = won ? "¡Correcto!" : "Se acabaron los intentos";
+  els.head.className = "result-head " + (won ? "good" : "bad");
+  els.sub.textContent = won
+    ? `Lo lograste en el intento ${attempt} de 5.`
+    : `La canción era esta. ¡Suerte con la próxima!`;
+  els.art.src = song.art || "";
+  els.title.textContent = song.track;
+  els.artist.textContent = song.artist;
+  els.link.href = song.link || "#";
+  els.result.classList.add("show");
+  els.newSong.focus();
+}
+
+function onSubmit(e){
+  e.preventDefault();
+  if(!song || song.done) return;
+  const val = els.input.value.trim();
+  if(!val){ showToast("Escribe una respuesta primero"); return; }
+  if(isCorrect(val)){
+    attempt++;
+    addHistory(val, "right");
+    endGame(true);
+  }else{
+    attempt++;
+    addHistory(val, "wrong");
+    els.form.classList.remove("shake");
+    void els.form.offsetWidth;
+    els.form.classList.add("shake");
+    els.input.value = "";
+    if(attempt >= SNIPPETS.length){
+      endGame(false);
+    }else{
+      setStatus(`Intento <strong>${attempt+1}</strong> de 5`);
+      updateHint();
+      renderDots();
+      setTimeout(playSnippet, 650);
+    }
+  }
+}
+
+function onSkip(){
+  if(!song || song.done) return;
+  attempt++;
+  addHistory("Saltado", "skipped");
+  if(attempt >= SNIPPETS.length){
+    endGame(false);
+  }else{
+    setStatus(`Intento <strong>${attempt+1}</strong> de 5`);
+    updateHint();
+    renderDots();
+    setTimeout(playSnippet, 400);
+  }
+}
+
+function getStats(){
+  try{ return JSON.parse(localStorage.getItem("songless-stats")) || {streak:0,wins:0,played:0}; }
+  catch{ return {streak:0,wins:0,played:0}; }
+}
+function bumpStats(won){
+  const s = getStats();
+  s.played++;
+  if(won){ s.wins++; s.streak++; } else { s.streak = 0; }
+  localStorage.setItem("songless-stats", JSON.stringify(s));
+  return s;
+}
+
+let toastTimer = null;
+function showToast(msg){
+  els.toast.textContent = msg;
+  els.toast.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>els.toast.classList.remove("show"), 2200);
+}
+
+function pickSong(){
+  let src = pool.filter(s => !recentTracks.includes(s.track));
+  if(src.length === 0) src = pool;
+  const chosen = src[Math.floor(Math.random()*src.length)];
+  recentTracks.push(chosen.track);
+  if(recentTracks.length > 15) recentTracks.shift();
+  return chosen;
+}
+
+async function startGame(){
+  if(loading) return;
+  loading = true;
+  els.result.classList.remove("show");
+  els.history.innerHTML = "";
+  els.fill.style.width = "0%";
+  attempt = 0;
+  song = null;
+  setStatus(`Buscando canción · ${GENRES[currentGenre].label}`);
+  els.hint.textContent = "Preparando el tocadiscos…";
+  lockGuess(true);
+  els.playBtn.disabled = true;
+  document.querySelectorAll(".chip").forEach(c => c.disabled = true);
+  renderDots();
+
+  if(poolCache[currentGenre]){
+    pool = poolCache[currentGenre];
+  }else{
+    const loaded = await loadPool(currentGenre);
+    if(loaded !== FALLBACK_SONGS){
+      poolCache[currentGenre] = loaded;
+      pool = loaded;
+    }else{
+      pool = FALLBACK_SONGS;
+      showToast("No cargó la lista del género, uso la local");
+    }
+  }
+  song = pickSong();
+  song.done = false;
+  song.solved = false;
+  delete els.playBtn._audio;
+
+  const opts = shuffle(pool.slice(0, 60)).map(s => `${s.artist} — ${s.track}`);
+  $("songList").innerHTML = opts.map(o=>`<option value="${o.replace(/"/g,"&quot;")}"></option>`).join("");
+
+  setStatus(`Intento <strong>1</strong> de 5`);
+  updateHint();
+  renderDots();
+  lockGuess(false);
+  els.playBtn.disabled = false;
+  loading = false;
+  document.querySelectorAll(".chip").forEach(c => c.disabled = false);
+}
+
+function renderChips(){
+  const bar = $("genreBar");
+  Object.entries(GENRES).forEach(([id,g])=>{
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "chip" + (id === currentGenre ? " active" : "");
+    b.dataset.genre = id;
+    b.textContent = g.label;
+    b.addEventListener("click", ()=>setGenre(id));
+    bar.appendChild(b);
+  });
+}
+
+function setGenre(id){
+  if(id === currentGenre || loading) return;
+  currentGenre = id;
+  document.querySelectorAll(".chip").forEach(c => c.classList.toggle("active", c.dataset.genre === id));
+  stopPlayback();
+  startGame();
+}
+
+els.playBtn.addEventListener("click", ()=>{
+  if(playing){ stopPlayback(); } else { playSnippet(); }
+});
+els.form.addEventListener("submit", onSubmit);
+els.skip.addEventListener("click", onSkip);
+els.newSong.addEventListener("click", startGame);
+
+(function init(){
+  renderChips();
+  const s = getStats();
+  els.streak.textContent = s.streak;
+  els.wins.textContent = s.wins;
+  els.played.textContent = s.played;
+  startGame();
+})();
+</script>
+</body>
+</html>
