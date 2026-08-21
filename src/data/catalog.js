@@ -75,7 +75,7 @@ export const CATALOG = {
 
 
 export const GENRES = {
-  reggaeton: { label: "Reggaeton" },
+  reggaeton: { label: "Reguetón" },
   pop:       { label: "Pop" },
   rock:      { label: "Rock" },
   hiphop:    { label: "Rap" }
