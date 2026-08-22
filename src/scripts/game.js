@@ -20,7 +20,8 @@ const els = {
   result: $("result"), head: $("resultHead"), sub: $("resultSub"),
   art: $("songArt"), title: $("songTitle"), artist: $("songArtist"), link: $("songLink"),
   toast: $("toast"), newSong: $("newSongBtn"), newSongTop: $("newSongTop"), retry: $("retryBtn"), share: $("shareBtn"),
-  statStreak: $("statStreak"), statWinPct: $("statWinPct"), statPlayed: $("statPlayed"), streakTop: $("streakTop"),
+  statStreak: $("statStreak"), statWinPct: $("statWinPct"), statPlayed: $("statPlayed"),
+  streakTop: $("streakTop"), streakPill: $("streakPill"), howToPlay: $("howToPlay"),
   ac: $("acList"),
 };
 
@@ -328,6 +329,8 @@ function renderStats(s) {
   els.statPlayed.textContent = s.played;
   els.statWinPct.textContent = s.played ? Math.round((s.wins / s.played) * 100) : 0;
   els.streakTop.textContent = s.streak;
+  els.streakPill.hidden = s.streak < 1;
+  els.howToPlay.hidden = s.played > 0;
 }
 
 /* ---------- share ---------- */

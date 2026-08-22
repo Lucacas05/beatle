@@ -19,7 +19,8 @@ const total = SNIPPETS.reduce((a, b) => a + b, 0);
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/></svg>
     </button>
     <h1 class="logo">Beatle</h1>
-    <span class="streak-pill">Streak <b id="streakTop">0</b></span>
+    <span class="streak-pill" id="streakPill" hidden
+          title="Songs guessed in a row. Resets when you miss one.">Streak <b id="streakTop">0</b></span>
   </header>
 
   <div class="page">
@@ -28,6 +29,7 @@ const total = SNIPPETS.reduce((a, b) => a + b, 0);
         <button type="button" class={"chip" + (i === 0 ? " active" : "")} data-genre={id} aria-pressed={i === 0 ? "true" : "false"}>{g.label}</button>
       ))}
     </div>
+    <p class="howto" id="howToPlay" hidden>How to play: hear 1 second, then 2, then 4. Guess the song in five tries.</p>
 
     <main>
       <div class="rows" id="rows" aria-label="Guesses" aria-live="polite">
