@@ -201,11 +201,12 @@ function playSnippet() {
       seg.querySelector("i").style.width = f * 100 + "%";
     });
     if (elapsed < len) rafId = requestAnimationFrame(tick);
+    else stopPlayback();
   };
   rafId = requestAnimationFrame(tick);
-  audio.play().then(() => {
-    stopTimer = setTimeout(stopPlayback, len * 1000);
-  }).catch(() => {
+  stopTimer = setTimeout(stopPlayback, len * 1000);
+  audio.play().catch((err) => {
+    if (!playing || err?.name === "AbortError") return;
     stopPlayback();
     showToast("Tap play again to listen");
   });
