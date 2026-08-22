@@ -337,9 +337,20 @@ function shareResult() {
   const grid = results.map((r) => SQUARES[r.kind]).join("");
   const score = song.solved ? `${attempt}/${SNIPPETS.length}` : `X/${SNIPPETS.length}`;
   const text = `Beatle · ${GENRES[currentGenre].label} ${score}\n${grid}`;
-  const done = () => showToast("Copied to clipboard");
-  if (navigator.share) navigator.share({ text }).catch(() => {});
-  else if (navigator.clipboard) navigator.clipboard.writeText(text).then(done).catch(() => showToast("Couldn't copy"));
+  const copy = () => {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text)
+        .then(() => showToast("Copied to clipboard"))
+        .catch(() => showToast("Couldn't copy"));
+    } else {
+      showToast("Couldn't copy");
+    }
+  };
+  if (!navigator.share) { copy(); return; }
+  navigator.share({ text }).then(() => showToast("Shared")).catch((err) => {
+    if (err && err.name === "AbortError") showToast("Share cancelled");
+    else copy();
+  });
 }
 
 let toastTimer = null;
