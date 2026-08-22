@@ -235,7 +235,7 @@ function titleNearMiss(guess) {
   const t = norm(song.track);
   if (!g || !t) return false;
   const winTol = t.length > 14 ? 3 : t.length > 7 ? 2 : 1;
-  if (levenshtein(g, t) <= winTol + 2) return true;
+  if (levenshtein(g, t) <= winTol + 1) return true;
   const shorter = g.length <= t.length ? g : t;
   const longer = g.length <= t.length ? t : g;
   return shorter.length >= 4 && longer.includes(shorter);
