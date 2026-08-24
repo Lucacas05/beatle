@@ -287,6 +287,13 @@ function onSubmit(e) {
   const val = els.input.value.trim();
   if (!val) { showToast("Type a guess first"); return; }
   closeAC();
+  if (!ALL_TITLES.has(norm(val))) {
+    els.form.classList.remove("shake");
+    void els.form.offsetWidth;
+    els.form.classList.add("shake");
+    showToast("Pick a song from the list");
+    return;
+  }
   if (isCorrect(val)) {
     results.push({ kind: "right", text: song.track });
     attempt++;
