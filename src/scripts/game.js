@@ -230,6 +230,23 @@ function sameArtist(guess) {
   return !!s && norm(s.artist) === norm(song.artist);
 }
 
+function titleNearMiss(guess) {
+  const g = norm(guess);
+  const t = norm(song.track);
+  if (!g || !t) return false;
+  const winTol = t.length > 14 ? 3 : t.length > 7 ? 2 : 1;
+  if (levenshtein(g, t) <= winTol + 1) return true;
+  const shorter = g.length <= t.length ? g : t;
+  const longer = g.length <= t.length ? t : g;
+  return shorter.length >= 4 && longer.includes(shorter);
+}
+
+function lossHeadline() {
+  const close = results.some((r) => r.kind === "artist" || (r.kind === "wrong" && titleNearMiss(r.text)));
+  if (close) return "So close";
+  return results.some((r) => r.kind !== "skipped") ? "Better luck next time" : "Not this time";
+}
+
 function lockGuess(lock) {
   els.input.disabled = lock;
   els.submit.disabled = lock;
@@ -257,7 +274,7 @@ function endGame(won) {
   renderStats(stats);
   const heard = SNIPPETS.slice(0, attempt).reduce((a, b) => a + b, 0);
   const praise = ["Genius", "Magnificent", "Impressive", "Splendid", "Great"];
-  els.head.textContent = won ? praise[attempt - 1] || "Great" : "So close";
+  els.head.textContent = won ? praise[attempt - 1] || "Great" : lossHeadline();
   els.sub.textContent = won
     ? `Got it in ${attempt} · ${heard} seconds of audio`
     : `The song was`;
