@@ -191,14 +191,14 @@ function playSnippet() {
   const tick = () => {
     if (!playing) return;
     const elapsed = Math.min((performance.now() - playStart) / 1000, len);
-    // fill segments proportionally to elapsed time (segments are sized by their length)
+    // SNIPPETS are cumulative end times (1s, 2s, 4s…), not per-segment durations
     let acc = 0;
     els.segs.forEach((seg, i) => {
-      const segLen = SNIPPETS[i];
-      const segStart = acc;
-      acc += segLen;
-      const f = Math.max(0, Math.min((elapsed - segStart) / segLen, 1));
+      const segEnd = SNIPPETS[i];
+      const segLen = segEnd - acc;
+      const f = Math.max(0, Math.min((elapsed - acc) / segLen, 1));
       seg.querySelector("i").style.width = f * 100 + "%";
+      acc = segEnd;
     });
     if (elapsed < len) rafId = requestAnimationFrame(tick);
   };
